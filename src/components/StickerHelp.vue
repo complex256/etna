@@ -109,8 +109,8 @@ const legend: { n: number; title: string; where: string | null; text: string }[]
         <span class="callout" aria-hidden="true">{{ item.n }}</span>
         <div>
           <b>{{ item.title }}</b>
-          <span v-if="item.where" class="goes"> → {{ item.where }}</span>
-          <span v-else class="goes none"> (not needed)</span>
+          <span v-if="item.where" class="goes">{{ " → " + item.where }}</span>
+          <span v-else class="goes none">{{ " (not needed)" }}</span>
           <div class="dim">{{ item.text }}</div>
         </div>
       </li>

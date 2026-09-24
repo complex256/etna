@@ -59,7 +59,13 @@ const model = computed(() => d.model(appState.value.market, appState.value.model
 const catEntry = computed(() =>
   model.value?.catalogs.find((c) => String(c.kat) === String(props.kat)),
 );
-const inCatalog = computed(() => new Set(ctx.value?.sets.pr ?? []));
+// A code affects the catalog when its family occurs in it: "without roof" rules out the roof
+// illustrations even though only "with roof" is written there.
+const inCatalog = computed(() => {
+  const codes = new Set(ctx.value?.sets.pr ?? []);
+  const fams = new Set([...codes].map((c) => famOf(c)).filter(Boolean));
+  return { has: (c: string) => codes.has(c) || fams.has(famOf(c)) };
+});
 const famOf = (c: string) => ctx.value?.prInfo.code.get(c)?.family || null;
 
 onMounted(async () => {

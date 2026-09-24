@@ -62,7 +62,7 @@ function addAll() {
         <button class="linkish" @click="go({ plate: plate.key, hg: plate.hg, equip: null })">
           {{ plateLabel(plate) }}
         </button>
-        <span class="dim"> {{ plateTitle(plate).title.replace(/\n/g, " ") }}</span>
+        <span class="dim">{{ " " + plateTitle(plate).title.replace(/\n/g, " ") }}</span>
       </div>
       <table class="grid mini">
         <tbody>

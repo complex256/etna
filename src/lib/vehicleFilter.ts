@@ -134,7 +134,7 @@ export interface CodeSets {
   pr: string[];
 }
 const codeSets = new WeakMap<Catalog, CodeSets>();
-/** Engine, gearbox and PR codes that occur in a catalog, for the entry form. */
+/** Engine, gearbox and PR codes that occur in a catalog (part rows and illustration conditions). */
 export function codesIn(cat: Catalog): CodeSets {
   let s = codeSets.get(cat);
   if (!s) {
@@ -146,6 +146,13 @@ export function codesIn(cat: Catalog): CodeSets {
         for (const c of r.HG || []) if (c.trim()) mkb.add(c.trim());
         for (const c of r.C3 || []) if (c.trim()) gkb.add(c.trim());
         for (const c of r.C0 || []) if (c.trim()) pr.add(c.trim());
+        // Codes in an illustration's own condition ("PR:GP1+3NT") count too.
+        if (r.AD === "U")
+          for (const line of lines(r.DC, r.DG)) {
+            const at = line.indexOf("PR:");
+            if (at >= 0)
+              for (const m of line.slice(at + 3).matchAll(/\b[0-9A-Z]{3}\b/g)) pr.add(m[0]);
+          }
       }
     s = { mkb: [...mkb].sort(), gkb: [...gkb].sort(), pr: [...pr].sort() };
     codeSets.set(cat, s);

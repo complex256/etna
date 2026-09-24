@@ -93,7 +93,7 @@ watch(
         <div ref="listEl" class="equip-families">
           <section v-for="g in shown" :key="g.fam" class="equip-family">
             <h3>
-              {{ g.name }}<span class="dim"> {{ g.fam === "—" ? "" : g.fam }}</span>
+              {{ g.name }}<span class="dim">{{ g.fam === "—" ? "" : " " + g.fam }}</span>
             </h3>
             <ul class="plain">
               <li v-for="c in g.codes" :key="c.code">

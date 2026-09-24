@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "description": "Etna: browse parts-catalog dumps in the browser. Exploded views, erupting parts.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vp dev",

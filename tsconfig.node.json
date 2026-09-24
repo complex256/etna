@@ -16,5 +16,11 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "plugins/**/*.ts", "tests/e2e/**/*.ts", "playwright.config.ts"]
+  "include": [
+    "vite.config.ts",
+    "plugins/**/*.ts",
+    "tests/e2e/**/*.ts",
+    "scripts/**/*.ts",
+    "playwright.config.ts"
+  ]
 }

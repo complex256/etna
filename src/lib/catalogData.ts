@@ -89,6 +89,17 @@ export function navPicture(ref: string, view: string): Promise<NavPicture | null
   return p;
 }
 
+/** Views (1-4) of a picture set that exist in the dump; a file lookup each, nothing decoded. */
+export async function navViews(ref: string): Promise<string[]> {
+  const brand = dump().brandDir;
+  const dir = brand && (await brand.dir("Categories"));
+  if (!dir) return [];
+  const found = await Promise.all(
+    ["1", "2", "3", "4"].map(async (v) => ((await dir.file(`${ref}${v}.zgd`)) ? v : null)),
+  );
+  return found.filter((v): v is string => v !== null);
+}
+
 /* ---------------- catalogs and models ---------------- */
 
 export interface ModelSpan {

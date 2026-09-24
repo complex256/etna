@@ -87,7 +87,7 @@ const productText = (p: Rec) => `${s(p.AE)} ${s(p.AF).toLowerCase()}`.trim();
                 <button class="linkish pn" @click="go({ part: p.AB.trimEnd() })">
                   {{ fmtPart(p.AB) }}
                 </button>
-                <span class="dim"> {{ productText(p) }}</span>
+                <span class="dim">{{ " " + productText(p) }}</span>
                 <AddToListButton :pn="p.AB" :text="`${text(r.AC)} ${productText(p)}`.trim()" />
               </div>
             </td>

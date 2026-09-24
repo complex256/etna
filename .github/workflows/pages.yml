@@ -1,5 +1,5 @@
 # Checks, tests and builds the viewer, then publishes dist/index.html to GitHub Pages.
-# The dump tests and browser tests need a catalog dump, so CI runs the rest (they skip themselves).
+# Tests that need a real catalog dump skip themselves; the rest run on the built-in demo.
 name: Pages
 
 on:
@@ -30,6 +30,9 @@ jobs:
       - run: vp check
       - run: vp test run
       - run: vp exec vue-tsc -b
+      # Browser tests on the built-in demo catalog (the real-dump tests skip themselves).
+      - run: vp exec playwright install --with-deps chromium
+      - run: vp exec playwright test
       - run: vp build
       - uses: actions/upload-pages-artifact@v5.0.0
         if: github.event_name != 'pull_request'

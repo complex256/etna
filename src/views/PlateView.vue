@@ -302,8 +302,8 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKey));
       </div>
     </div>
     <div v-if="note" class="note-bar">
-      <b>Note</b><span v-if="note.fallback" class="dim"> (German) </span
-      ><template v-else> </template>{{ note.text }}
+      <b>Note</b><span v-if="note.fallback" class="dim">{{ " (German)" }}</span
+      >{{ " " + note.text }}
     </div>
     <div class="plate">
       <IllustrationStage

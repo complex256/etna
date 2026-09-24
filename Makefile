@@ -7,7 +7,8 @@
 #   make serve      build and serve it at http://localhost:$(PORT)/ (folder picker works there)
 #   make check      format, lint and type checks
 #   make test       checks + unit tests (the dump tests use $(DUMP))
-#   make e2e        browser tests against $(DUMP)
+#   make e2e        browser tests (the demo catalog, plus $(DUMP) when set)
+#   make screenshots  README screenshots of the demo catalog, light and dark
 #
 # DUMP is the brand folder of a dump (the one containing Data1/Data2, Bilder, ...).
 
@@ -19,7 +20,7 @@ PORT ?= 8765
 export PATH := $(HOME)/.local/share/vite-plus/bin:$(HOME)/.local/share/vite-plus/fallback-bin:$(PATH)
 VP := $(shell PATH="$(PATH)" command -v vp)
 
-.PHONY: all install dev build open serve check test unit e2e clean help
+.PHONY: all install dev build open serve check test unit e2e screenshots clean help
 
 all: build
 
@@ -52,11 +53,13 @@ unit: node_modules
 test: check unit
 
 e2e: node_modules
-	@test -d "$(DUMP)" || { echo "DUMP folder not found: $(DUMP) (make e2e DUMP=/path/to/dump/<brand>)"; exit 1; }
 	DUMP="$(DUMP)" $(VP) exec playwright test
+
+screenshots: node_modules
+	$(VP) node scripts/screenshots.ts
 
 clean:
 	rm -rf dist test-results playwright-report node_modules/.tmp
 
 help:
-	@sed -n '1,12p' Makefile | sed 's/^# \{0,1\}//'
+	@sed -n '1,13p' Makefile | sed 's/^# \{0,1\}//'

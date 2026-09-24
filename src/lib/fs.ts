@@ -273,3 +273,44 @@ export class HttpDir implements Dir {
     return [...(await this.map()).values()].filter((e) => !e.dir).map((e) => e.name);
   }
 }
+
+/** Files held in memory, by path ("PQ/Data1/OVERVIEW.BIN"): the built-in demo catalog. */
+export class MemoryDir implements Dir {
+  readonly name: string;
+  private readonly sub = new Map<string, MemoryDir>();
+  private readonly files = new Map<string, File>();
+  constructor(name: string) {
+    this.name = name;
+  }
+  /** The top folder of the paths (they must share one). */
+  static from(files: Map<string, Uint8Array>): MemoryDir {
+    const root = new MemoryDir("");
+    for (const [path, data] of files) {
+      const parts = path.split("/");
+      let d = root;
+      for (const p of parts.slice(0, -1)) {
+        const k = p.toLowerCase();
+        if (!d.sub.has(k)) d.sub.set(k, new MemoryDir(p));
+        d = d.sub.get(k)!;
+      }
+      const name = parts[parts.length - 1];
+      d.files.set(
+        name.toLowerCase(),
+        new File([data as Uint8Array<ArrayBuffer>], name, { lastModified: 0 }),
+      );
+    }
+    return root.sub.size === 1 ? [...root.sub.values()][0] : root;
+  }
+  async dir(n: string) {
+    return this.sub.get(n.toLowerCase()) || null;
+  }
+  async file(n: string) {
+    return this.files.get(n.toLowerCase()) || null;
+  }
+  async dirs() {
+    return [...this.sub.values()];
+  }
+  async fileNames() {
+    return [...this.files.values()].map((f) => f.name);
+  }
+}

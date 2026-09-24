@@ -6,7 +6,14 @@ import IllustrationStage from "../components/IllustrationStage.vue";
 import NavPlateList from "../components/NavPlateList.vue";
 import VehicleDataButton from "../components/VehicleDataButton.vue";
 import { useLoad } from "../composables/useLoad";
-import { navGroupKey, navGroups, navPicture, navRefs, type NavGroup } from "../lib/catalogData";
+import {
+  navGroupKey,
+  navGroups,
+  navPicture,
+  navRefs,
+  navViews,
+  type NavGroup,
+} from "../lib/catalogData";
 import type { Plate } from "../lib/dump";
 import { layoutPins, type PinPlacement } from "../lib/format/zgd";
 import { drawNavPicture } from "../lib/illustrations";
@@ -111,6 +118,17 @@ const picture = useLoad(
   },
 );
 const img = computed(() => picture.data.value?.img ?? null);
+// Only the views this picture set has (all four in real dumps; the demo has one).
+const views = useLoad(
+  () => chosen.value && navGroupKey(chosen.value),
+  async (): Promise<string[]> => (chosen.value ? navViews(chosen.value.ref) : []),
+);
+const viewTabs = computed(() =>
+  views.data.value?.length ? views.data.value : ["1", "2", "3", "4"],
+);
+watch(views.data, (v) => {
+  if (v?.length && !v.includes(viewNo.value)) go({ nav: v[0] }, true);
+});
 // Another view or picture set starts from its overview of areas.
 watch(
   () => [viewNo.value, chosen.value && navGroupKey(chosen.value)],
@@ -220,7 +238,7 @@ const leaderStyle = (i: number) => {
       </label>
       <div class="view-tabs" role="tablist" aria-label="Views">
         <button
-          v-for="v in ['1', '2', '3', '4']"
+          v-for="v in viewTabs"
           :key="v"
           :class="['nav-btn', { active: v === viewNo }]"
           role="tab"
@@ -302,7 +320,7 @@ const leaderStyle = (i: number) => {
           <ul v-if="areas.length" class="plain areas">
             <li v-for="id in areas" :key="id">
               <button class="linkish" @click="shownId = id">{{ text(id) }}</button>
-              <span class="dim"> {{ shownCount(id) }}</span>
+              <span class="dim">{{ " " + shownCount(id) }}</span>
             </li>
           </ul>
           <div v-else-if="!picture.loading.value" class="empty">

@@ -285,8 +285,8 @@ onBeforeUnmount(() => {
           </template>
         </dl>
         <div v-if="note" class="note-bar inline">
-          <b>Note</b><span v-if="note.fallback" class="dim"> (German) </span
-          ><template v-else> </template>{{ note.text }}
+          <b>Note</b><span v-if="note.fallback" class="dim">{{ " (German)" }}</span
+          >{{ " " + note.text }}
         </div>
 
         <section v-if="successors.length" class="dsec">
@@ -299,7 +299,7 @@ onBeforeUnmount(() => {
               <template v-if="(b.B2 || '').trim() && (b.B2 || '').trim() !== '1'">
                 × {{ b.B2.trim() }}</template
               >
-              <span v-if="b.B3" class="dim"> {{ d.text(b.B3) }}</span>
+              <span v-if="b.B3" class="dim">{{ " " + d.text(b.B3) }}</span>
             </li>
           </ul>
         </section>
@@ -346,7 +346,7 @@ onBeforeUnmount(() => {
               >
                 {{ plateLabel(o.plate) }}{{ o.pos ? ` pos ${o.pos}` : "" }}
               </button>
-              <span class="dim"> {{ o.plateTitle }}</span>
+              <span class="dim">{{ " " + o.plateTitle }}</span>
             </li>
           </ul>
         </section>

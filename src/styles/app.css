@@ -2124,3 +2124,10 @@ tfoot td {
   font-size: 13.5px;
   white-space: nowrap;
 }
+.demo-offer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 24px;
+}

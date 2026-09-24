@@ -2,7 +2,7 @@
 import { defineStore } from "pinia";
 import { computed, ref, shallowRef } from "vue";
 import { Dump, findBrands, setDump, type Brand } from "../lib/dump";
-import { HandleDir, ListDir, type Dir } from "../lib/fs";
+import { HandleDir, ListDir, MemoryDir, type Dir } from "../lib/fs";
 import { clearThumbnails, Illustrations } from "../lib/illustrations";
 import { idb, pref } from "../lib/storage";
 import { appState, go, router } from "../router";
@@ -147,6 +147,22 @@ export const useSession = defineStore("session", () => {
     await openRoot(root);
   }
 
+  /** The built-in demo catalog of a toy car (built on demand: the generator loads only now). */
+  async function openDemo() {
+    welcomeError.value = "";
+    startLoading(
+      "Building the demo catalog",
+      "A made-up ride-on toy car, drawn and written in the dump formats.",
+    );
+    try {
+      const { buildDemoFiles } = await import("../demo");
+      await openRoot(MemoryDir.from(await buildDemoFiles()));
+    } catch (e) {
+      console.error(e);
+      fail((e as Error).message);
+    }
+  }
+
   /** Back to the welcome page (another dump, or after an error). */
   function close() {
     setDump(null);
@@ -170,6 +186,7 @@ export const useSession = defineStore("session", () => {
     openHandle,
     reopen,
     openFileList,
+    openDemo,
     close,
   };
 });

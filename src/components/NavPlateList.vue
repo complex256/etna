@@ -53,7 +53,7 @@ const open = (p: Plate) => go({ plate: p.key, hg: p.hg, nav: null, navref: null 
   <div class="nav-list-head split">
     <div>
       <b>{{ title }}</b
-      ><span class="dim"> {{ countText }}</span>
+      ><span class="dim">{{ " " + countText }}</span>
     </div>
     <div
       v-if="plates.length"

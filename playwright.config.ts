@@ -1,5 +1,5 @@
-// End-to-end tests against a real dump: `DUMP=/path/to/dump/<brand> vpr e2e` (or `make e2e`). The dev
-// server opens that dump on start, so no folder picker is involved.
+// Browser tests. tests/e2e/demo.spec.ts uses the built-in demo; viewer.spec.ts needs a real dump:
+// `DUMP=/path/to/dump/<brand> vpr e2e` (or `make e2e`), which the dev server opens on start.
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 5199;
@@ -17,12 +17,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
   ],
-  webServer: process.env.DUMP
-    ? {
-        command: `vp dev --port ${PORT} --strictPort`,
-        url: `http://localhost:${PORT}/`,
-        reuseExistingServer: false,
-        env: { DUMP: process.env.DUMP },
-      }
-    : undefined,
+  // The dev server opens DUMP when it is set; the demo tests need no dump.
+  webServer: {
+    command: `vp dev --port ${PORT} --strictPort`,
+    url: `http://localhost:${PORT}/`,
+    reuseExistingServer: false,
+    env: process.env.DUMP ? { DUMP: process.env.DUMP } : {},
+  },
 });

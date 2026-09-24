@@ -100,7 +100,7 @@ function onCancel() {
         </div>
         <div class="dropzone">
           <b>Or drag the dump folder onto this page.</b>
-          <span class="dim"> Works the same as the button.</span>
+          <span class="dim">{{ " Works the same as the button." }}</span>
         </div>
       </template>
       <div v-else class="dropzone big">
@@ -110,9 +110,11 @@ function onCancel() {
           a full dump opens right away.</span
         >
       </div>
-      <p>
-        Use the brand folder (such as AU) or the folder above it. The viewer expects this layout:
-      </p>
+      <div class="demo-offer">
+        <button class="btn" @click="session.openDemo()">Try the demo</button>
+        <span class="dim">No dump at hand? Explore a built-in catalog of a ride-on toy car.</span>
+      </div>
+      <p>Use the brand folder or the folder above it. The viewer expects this layout:</p>
       <div class="layout">{{ layout }}</div>
     </div>
     <input

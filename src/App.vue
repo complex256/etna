@@ -59,7 +59,7 @@ async function onDrop(e: DragEvent) {
     await session.openRoot(new EntryDir(entry as FileSystemDirectoryEntry));
   else
     session.welcomeError =
-      "That was a file, not a folder. Drag the dump’s folder (for example AU) onto the page.";
+      "That was a file, not a folder. Drag the dump’s brand folder onto the page.";
 }
 
 onMounted(() => {

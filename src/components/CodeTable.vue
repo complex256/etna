@@ -77,7 +77,9 @@ function openCatalog(k: number, code: string) {
           >
             {{ k }}
           </button>
-          <span v-if="cats(r.code).length > 12" class="dim"> +{{ cats(r.code).length - 12 }}</span>
+          <span v-if="cats(r.code).length > 12" class="dim">{{
+            ` +${cats(r.code).length - 12}`
+          }}</span>
         </td>
       </tr>
     </tbody>
