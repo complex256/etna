@@ -2,7 +2,7 @@
 // Vehicle data entry laid out like the car's data sticker. Equipment codes replace others of the
 // same family; family dropdowns stay in sync with the codes.
 import { computed, nextTick, onMounted, ref, shallowRef } from "vue";
-import { paintData, type PaintData } from "../lib/catalogData";
+import { modelsForCatalog, paintData, type PaintData } from "../lib/catalogData";
 import {
   ModelCodes,
   PR,
@@ -11,8 +11,10 @@ import {
   type ModelCode,
   type PrInfo,
 } from "../lib/tables";
-import { codesIn, type CodeSets, type VehicleData } from "../lib/vehicleFilter";
+import { useFlash } from "../composables/useFlash";
+import { codesIn, emptyVehicleData, type CodeSets, type VehicleData } from "../lib/vehicleFilter";
 import { appState } from "../router";
+import { useGarage } from "../stores/garage";
 import { useSession } from "../stores/session";
 import { useVehicleData } from "../stores/vehicleData";
 import StickerHelp from "./StickerHelp.vue";
@@ -21,6 +23,7 @@ const props = defineProps<{ market: string; kat: string }>();
 const emit = defineEmits<{ close: [] }>();
 const session = useSession();
 const vehicleData = useVehicleData();
+const garage = useGarage();
 const d = session.dump!;
 const dlg = ref<HTMLDialogElement>();
 const form = ref<HTMLFormElement>();
@@ -236,30 +239,80 @@ async function toggleHelp(show?: boolean) {
   await nextTick();
   if (!help.value) helpBtn.value?.focus({ preventScroll: true });
 }
+/** The form as vehicle data (codes still being typed included). */
+function formData(): VehicleData {
+  if (pending.value.trim()) {
+    addCodes(pending.value);
+    pending.value = "";
+  }
+  const v = fields.value;
+  const pr: Record<string, string> = {};
+  for (const c of codes.value) {
+    const fam = famOf(c);
+    if (fam) pr[fam] = c;
+  }
+  return {
+    mkb: v.mkb.trim(),
+    gkb: v.gkb.trim(),
+    pr,
+    hide: hide.value,
+    sticker: {
+      vin: v.vin.trim(),
+      type: v.type.trim(),
+      paint: v.paint.trim(),
+      trim: v.trim.trim(),
+      codes: [...codes.value],
+    },
+  };
+}
+
+/* ---------------- garage ---------------- */
+
+// Saved under a name: the garage vehicle with this VIN, else the model and year.
+const sameVin = garage.vehicles.find((v) => st.vin && v.data.sticker?.vin === st.vin);
+const garageName = ref(
+  sameVin?.name ||
+    [model.value?.name, appState.value.year].filter(Boolean).join(" ") ||
+    `Catalog ${props.kat}`,
+);
+const { label: saveLabel, flash: flashSave } = useFlash("Save to garage");
+function saveToGarage() {
+  const name = garageName.value.trim();
+  if (!name) return flashSave("Enter a name first");
+  garage.put({
+    name,
+    market: props.market,
+    model:
+      appState.value.model ?? modelsForCatalog(props.market, +props.kat)[0]?.model.code ?? null,
+    year: appState.value.year,
+    kat: props.kat,
+    data: formData(),
+  });
+  flashSave("Saved to garage");
+}
+/** Fills the form from a saved vehicle (its codes also work in another catalog of the car). */
+function loadFromGarage(id: string) {
+  const v = garage.get(id);
+  if (!v) return;
+  const s = v.data.sticker;
+  fields.value = {
+    vin: s?.vin || "",
+    type: s?.type || "",
+    mkb: v.data.mkb,
+    gkb: v.data.gkb,
+    paint: s?.paint || "",
+    trim: s?.trim || "",
+  };
+  codes.value = s?.codes ? [...s.codes] : Object.values(v.data.pr);
+  hide.value = v.data.hide;
+  garageName.value = v.name;
+  replacedNote.value = "";
+}
+
 function onClose() {
   const action = dlg.value!.returnValue;
-  if (action === "apply" || action === "clear") {
-    if (pending.value.trim()) addCodes(pending.value);
-    const next: VehicleData = { mkb: "", gkb: "", pr: {}, hide: false, sticker: null };
-    if (action === "apply") {
-      const v = fields.value;
-      next.mkb = v.mkb.trim();
-      next.gkb = v.gkb.trim();
-      next.hide = hide.value;
-      for (const c of codes.value) {
-        const fam = famOf(c);
-        if (fam) next.pr[fam] = c;
-      }
-      next.sticker = {
-        vin: v.vin.trim(),
-        type: v.type.trim(),
-        paint: v.paint.trim(),
-        trim: v.trim.trim(),
-        codes: [...codes.value],
-      };
-    }
-    vehicleData.set(props.market, props.kat, next);
-  }
+  if (action === "apply") vehicleData.set(props.market, props.kat, formData());
+  else if (action === "clear") vehicleData.set(props.market, props.kat, emptyVehicleData());
   emit("close");
 }
 </script>
@@ -283,6 +336,15 @@ function onClose() {
       </div>
       <StickerHelp v-if="help" @back="toggleHelp(false)" />
       <div v-show="!help" class="filter-body">
+        <label v-if="garage.count" class="field inline garage-load">
+          <span>Load from garage</span>
+          <select @change="loadFromGarage(($event.target as HTMLSelectElement).value)">
+            <option value="" selected disabled>Choose a saved vehicle…</option>
+            <option v-for="v in garage.sorted" :key="v.id" :value="v.id">
+              {{ v.name }}{{ v.data.sticker?.vin ? ` (${v.data.sticker.vin})` : "" }}
+            </option>
+          </select>
+        </label>
         <p class="dim">
           Copy the vehicle’s data sticker (in the service book and the spare-wheel well). Parts that
           the codes rule out are dimmed.
@@ -460,6 +522,17 @@ function onClose() {
           ><input v-model="hide" type="checkbox" /> Hide parts that do not fit instead of dimming
           them</label
         >
+      </div>
+      <div v-show="!help" class="garage-save">
+        <span class="garage-save-label">Garage name</span>
+        <input
+          v-model="garageName"
+          class="filter"
+          aria-label="Name in the garage"
+          placeholder="Name, for example the car’s nickname"
+          @keydown.enter.prevent="saveToGarage"
+        />
+        <button type="button" class="btn" @click="saveToGarage">{{ saveLabel }}</button>
       </div>
       <div v-show="!help" class="dialog-actions">
         <button class="btn" value="clear" type="submit">Clear all</button>

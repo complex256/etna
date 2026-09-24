@@ -40,6 +40,7 @@ function openSource(it: ListItem) {
     hg: null,
     q: null,
     list: null,
+    garage: null,
   });
 }
 function exportCsv() {

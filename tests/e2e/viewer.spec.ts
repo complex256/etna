@@ -115,3 +115,37 @@ test("equipment page compares an option with the vehicle", async ({ page }) => {
     "Parts you would need for KS1",
   );
 });
+
+test("garage saves a vehicle and restores its data", async ({ page }) => {
+  await open(page, CATALOG);
+  await page.getByRole("button", { name: "Vehicle data" }).click();
+  let dialog = page.getByRole("dialog", { name: "Vehicle data" });
+  await dialog.getByLabel("Add PR codes").pressSequentially("KS1 9VS GP1 3NT ");
+  await dialog.getByLabel("Name in the garage").fill("Test car");
+  await dialog.getByRole("button", { name: "Save to garage" }).click();
+  await expect(dialog.getByRole("button", { name: "Saved to garage" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByRole("button", { name: "Garage (1)" })).toBeVisible();
+
+  // The data was saved, not applied: the catalog still has none.
+  await expect(page.getByRole("button", { name: "Vehicle data", exact: true })).toBeVisible();
+
+  // The dialog of any catalog can load it.
+  await page.getByRole("button", { name: "Vehicle data", exact: true }).click();
+  dialog = page.getByRole("dialog", { name: "Vehicle data" });
+  await dialog.getByLabel("Load from garage").selectOption({ label: "Test car" });
+  await expect(dialog.locator(".sticker-code")).toHaveText(["KS1", "9VS", "GP1", "3NT"]);
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+
+  // Opening it from the garage applies its data to its catalog.
+  await page.getByRole("button", { name: "Garage (1)" }).click();
+  await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible();
+  await expect(page.locator("table.garage tbody tr")).toHaveCount(1);
+  await page.getByRole("button", { name: "Open" }).click();
+  await expect(page).toHaveURL(/\/catalog\/849/);
+  await expect(page.getByRole("button", { name: "Vehicle data (4)" })).toBeVisible();
+
+  // Persisted in the browser: still there after a reload.
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Garage (1)" })).toBeVisible();
+});

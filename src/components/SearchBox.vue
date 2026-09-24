@@ -38,7 +38,7 @@ function run(q: string) {
   close();
   input.value?.blur();
   SearchHistory.add(q);
-  go({ q, list: null, ts: null, codes: null, code: null });
+  go({ q, list: null, garage: null, ts: null, codes: null, code: null });
 }
 function submit() {
   const q = value.value.trim();

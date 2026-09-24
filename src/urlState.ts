@@ -31,6 +31,8 @@ export interface AppState {
   code: string | null;
   q: string | null;
   list: string | null;
+  /** Saved vehicles page. */
+  garage: string | null;
   /** Part number shown in the side drawer. */
   part: string | null;
 }
@@ -52,6 +54,7 @@ export const STATE_KEYS: (keyof AppState)[] = [
   "code",
   "q",
   "list",
+  "garage",
   "part",
 ];
 const empty = (): AppState =>
@@ -64,6 +67,7 @@ function pathOf(s: AppState): PathKeys {
   if (!s.market) return ["/", []];
   const m = `/${enc(s.market)}`;
   if (s.list) return [`${m}/parts-list`, ["list"]];
+  if (s.garage) return [`${m}/garage`, ["garage"]];
   if (s.ts) return [`${m}/description/${enc(s.ts)}`, ["ts"]];
   if (s.codes) return [`${m}/codes/${enc(s.codes)}`, ["codes"]];
   if (s.q) return [`${m}/search`, []];
@@ -106,6 +110,9 @@ export function locationToState(route: RouteLike): AppState {
   switch (route.name) {
     case "partsList":
       s.list = "1";
+      break;
+    case "garage":
+      s.garage = "1";
       break;
     case "description":
       s.ts = p.ts ?? null;

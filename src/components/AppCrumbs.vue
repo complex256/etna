@@ -24,6 +24,7 @@ const crumbs = computed<Crumb[]>(() => {
   const up: StatePatch = {
     q: null,
     list: null,
+    garage: null,
     nav: null,
     navref: null,
     paint: null,
@@ -32,7 +33,7 @@ const crumbs = computed<Crumb[]>(() => {
     codes: null,
     code: null,
   };
-  const here = !s.q && !s.list && !s.ts && !s.codes;
+  const here = !s.q && !s.list && !s.garage && !s.ts && !s.codes;
   add(
     "Vehicles",
     { model: null, kat: null, year: null, hg: null, plate: null, ...up },
@@ -53,6 +54,7 @@ const crumbs = computed<Crumb[]>(() => {
   if (s.ts) add("Description use", {}, true);
   if (s.codes) add(s.codes === "gearbox" ? "Gearbox codes" : "Engine codes", {}, true);
   if (s.list) add("Parts list", {}, true);
+  if (s.garage) add("Garage", {}, true);
   return out;
 });
 </script>

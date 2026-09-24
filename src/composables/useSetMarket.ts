@@ -12,7 +12,7 @@ export function useSetMarket() {
     const s = appState.value;
     if (!m || m === s.market) return;
     pref.set("market", m);
-    if (s.q || s.list || s.ts || s.codes) return go({ market: m, part: null });
+    if (s.q || s.list || s.garage || s.ts || s.codes) return go({ market: m, part: null });
     const keepModel = s.model && session.dump?.model(m, s.model) ? s.model : null;
     return go({
       market: m,

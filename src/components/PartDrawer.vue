@@ -183,6 +183,7 @@ async function loadWhereUsed(part: string, market: string, stale: () => boolean)
           hg: null,
           q: null,
           list: null,
+          garage: null,
         },
       });
     }

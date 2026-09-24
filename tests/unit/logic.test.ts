@@ -18,6 +18,7 @@ function resolve(loc: { path: string; query: Record<string, unknown> }) {
   const patterns: [string, RegExp, string[]][] = [
     ["home", /^\/$/, []],
     ["partsList", /^\/([^/]+)\/parts-list$/, ["market"]],
+    ["garage", /^\/([^/]+)\/garage$/, ["market"]],
     ["description", /^\/([^/]+)\/description\/([^/]+)$/, ["market", "ts"]],
     ["codes", /^\/([^/]+)\/codes\/([^/]+)$/, ["market", "codes"]],
     ["search", /^\/([^/]+)\/search$/, ["market"]],
@@ -59,6 +60,7 @@ describe("URL state", () => {
     { market: "RDW", codes: "gearbox", code: "SUZ" },
     { market: "RDW", ts: "24164", kat: "673" },
     { market: "RDW", list: "1", kat: "673", plate: "10061" },
+    { market: "USA", garage: "1", kat: "849" },
   ];
   it.each(cases)("round-trips %o", (patch) => {
     expect(resolve(stateToLocation(state(patch)))).toEqual(state(patch));

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { pref } from "../lib/storage";
 import { appState, go } from "../router";
+import { useGarage } from "../stores/garage";
 import { usePartsList } from "../stores/partsList";
 import { useSession } from "../stores/session";
 import AppCrumbs from "./AppCrumbs.vue";
@@ -9,6 +10,7 @@ import SearchBox from "./SearchBox.vue";
 
 const session = useSession();
 const partsList = usePartsList();
+const garage = useGarage();
 
 function toggleTheme() {
   const root = document.documentElement;
@@ -34,7 +36,16 @@ function toggleTheme() {
       v-if="session.dump"
       class="icon-btn"
       type="button"
-      @click="go({ list: '1', part: null })"
+      title="Saved vehicles"
+      @click="go({ garage: '1', list: null, part: null })"
+    >
+      {{ garage.count ? `Garage (${garage.count})` : "Garage" }}
+    </button>
+    <button
+      v-if="session.dump"
+      class="icon-btn"
+      type="button"
+      @click="go({ list: '1', garage: null, part: null })"
     >
       {{ partsList.count ? `Parts list (${partsList.count})` : "Parts list" }}
     </button>
