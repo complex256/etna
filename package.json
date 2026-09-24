@@ -1,0 +1,39 @@
+{
+  "name": "etna",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Etna: browse parts-catalog dumps in the browser. Exploded views, erupting parts.",
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "vue-tsc -b && vp build",
+    "preview": "vp preview",
+    "check": "vp check && vue-tsc -b",
+    "test": "vp test run",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@vue/devtools-api": "^8.2.1",
+    "pinia": "^4.0.3",
+    "vue": "^3.5.43",
+    "vue-router": "^5.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.13.6",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vue/tsconfig": "^0.9.1",
+    "typescript": "~6.0.3",
+    "vite": "catalog:",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vite-plus": "catalog:",
+    "vue-tsc": "^3.3.11"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.6.0",
+      "onFail": "download"
+    }
+  }
+}
