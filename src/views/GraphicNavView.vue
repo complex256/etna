@@ -299,7 +299,8 @@ const leaderStyle = (i: number) => {
             {{
               picture.loading.value
                 ? "Loading picture…"
-                : `Navigation picture ${chosen?.ref}${viewNo}.zgd is not in this dump.`
+                : picture.error.value ||
+                  `Navigation picture ${chosen?.ref}${viewNo}.zgd is not in this dump.`
             }}
           </div>
         </div>

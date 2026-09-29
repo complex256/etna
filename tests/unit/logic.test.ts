@@ -1,5 +1,6 @@
 // Pure logic: URL mapping, part-number formatting, and the vehicle-data rules.
 import { describe, expect, it } from "vite-plus/test";
+import { perDump, setDump, type Dump } from "../../src/lib/dump";
 import type { PrInfo } from "../../src/lib/tables";
 import { fmtPart, normPos, plateKeyLabel } from "../../src/lib/text";
 import {
@@ -148,5 +149,21 @@ describe("part rows", () => {
     expect(rowMatches(row, vd({}, "CVKB"), prInfo)).toBe(false);
     expect(rowMatches(row, { ...vd({}), gkb: "SNK SUZ" }, prInfo)).toBe(true);
     expect(rowMatches(row, { ...vd({}), gkb: "SNK" }, prInfo)).toBe(false);
+  });
+});
+
+describe("per-dump caches", () => {
+  it("retry after a failed load instead of remembering the failure", async () => {
+    setDump({} as Dump);
+    let calls = 0;
+    const load = perDump(async () => {
+      if (++calls === 1) throw new Error("network hiccup");
+      return "ok";
+    });
+    await expect(load()).rejects.toThrow("hiccup");
+    await Promise.resolve();
+    expect(await load()).toBe("ok");
+    expect(await load()).toBe("ok");
+    expect(calls).toBe(2);
   });
 });

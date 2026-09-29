@@ -32,6 +32,8 @@ export function paintData(market: string): Promise<PaintData> {
       return { vg, vf, lacke };
     })();
     cache.set(market, p);
+    const failed = p;
+    p.catch(() => cache.get(market) === failed && cache.delete(market));
   }
   return p;
 }
@@ -84,6 +86,8 @@ export function navPicture(ref: string, view: string): Promise<NavPicture | null
       return f ? decodeZgd(new Uint8Array(await f.arrayBuffer())) : null;
     })();
     cache.set(key, p);
+    const failed = p;
+    p.catch(() => cache.get(key) === failed && cache.delete(key));
     if (cache.size > 8) cache.delete(cache.keys().next().value!);
   }
   return p;

@@ -2,6 +2,8 @@
 // the exact name first (no listing needed, which matters for folders like Tnrpics with ~90,000
 // files) and fall back to one cached listing.
 
+import { MANIFEST_NAME, parseManifest, type ManifestDir } from "./manifest";
+
 /** What the viewer needs from a file: a real File, or a lazily fetched one in development. */
 export interface FileLike {
   readonly name: string;
@@ -199,15 +201,8 @@ export class ListDir implements Dir {
   }
 }
 
-interface HttpEntry {
-  name: string;
-  dir: boolean;
-  size: number;
-  mtime: number;
-}
-
-/** A file on the development server, fetched with HTTP Range requests as slices are read. */
-class HttpFile implements FileLike {
+/** A file on a web server, read with HTTP Range requests as slices are needed. */
+class RemoteFile implements FileLike {
   readonly url: string;
   readonly name: string;
   readonly size: number;
@@ -224,54 +219,118 @@ class HttpFile implements FileLike {
     return {
       arrayBuffer: async () => {
         if (e <= s) return new ArrayBuffer(0);
-        const r = await fetch(this.url, { headers: { Range: `bytes=${s}-${e - 1}` } });
-        return r.arrayBuffer();
+        const r = await remoteFetch(this.url, { headers: { Range: `bytes=${s}-${e - 1}` } });
+        const buf = await r.arrayBuffer();
+        // A server that ignores Range sends the whole file.
+        return r.status === 206 ? buf : buf.slice(s, e);
       },
     };
   }
   async arrayBuffer() {
-    return (await fetch(this.url)).arrayBuffer();
+    return (await remoteFetch(this.url)).arrayBuffer();
   }
 }
 
-/** Development: a dump folder served by plugins/dump-server.ts. */
-export class HttpDir implements Dir {
-  private listing: Promise<Map<string, HttpEntry>> | null = null;
-  private readonly sub = new Map<string, HttpDir>();
+/** fetch with messages that say what went wrong with a hosted dump. */
+export async function remoteFetch(url: string, init?: RequestInit): Promise<Response> {
+  let r: Response;
+  try {
+    r = await fetch(url, init);
+  } catch {
+    throw new Error(
+      `Could not reach ${url}. The server must be online and allow cross-origin requests (CORS) from this page.`,
+    );
+  }
+  if (!r.ok) throw new Error(`${url}: the server answered ${r.status} ${r.statusText}.`);
+  return r;
+}
+
+/**
+ * A dump hosted as static files, described by an etna.json manifest (see manifest.ts). Listed
+ * folders answer from the manifest; unlisted (image) folders look files up by exact name.
+ */
+export class RemoteDir implements Dir {
   readonly url: string;
   readonly name: string;
-  constructor(url: string, name: string) {
+  private readonly node: ManifestDir;
+  private readonly sub = new Map<string, RemoteDir>();
+  constructor(url: string, name: string, node: ManifestDir) {
     this.url = url;
     this.name = name;
+    this.node = node;
   }
-  private map() {
-    this.listing ??= fetch(this.url)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((list: HttpEntry[]) => new Map(list.map((e) => [e.name.toLowerCase(), e])));
-    return this.listing;
+  private find<T>(map: Record<string, T> | undefined, n: string): [string, T] | null {
+    if (!map) return null;
+    if (n in map) return [n, map[n]];
+    const lower = n.toLowerCase();
+    for (const k in map) if (k.toLowerCase() === lower) return [k, map[k]];
+    return null;
   }
-  private child(e: HttpEntry) {
-    const k = e.name.toLowerCase();
+  private child(name: string, node: ManifestDir) {
+    const k = name.toLowerCase();
     if (!this.sub.has(k))
-      this.sub.set(k, new HttpDir(this.url + encodeURIComponent(e.name) + "/", e.name));
+      this.sub.set(k, new RemoteDir(this.url + encodeURIComponent(name) + "/", name, node));
     return this.sub.get(k)!;
   }
   async dir(n: string) {
-    const e = (await this.map()).get(n.toLowerCase());
-    return e && e.dir ? this.child(e) : null;
+    if (this.node.open) return this.child(n, { open: true });
+    const hit = this.find(this.node.d, n);
+    return hit ? this.child(hit[0], hit[1]) : null;
   }
   async file(n: string) {
-    const e = (await this.map()).get(n.toLowerCase());
-    return e && !e.dir
-      ? new HttpFile(this.url + encodeURIComponent(e.name), e.name, e.size, e.mtime)
+    const url = this.url + encodeURIComponent(n);
+    if (this.node.open) {
+      // Not listed: ask the server whether it exists and how big it is.
+      const r = await fetch(url, { method: "HEAD" }).catch(() => null);
+      if (!r || !r.ok) return null;
+      const size = +(r.headers.get("content-length") ?? 0);
+      return new RemoteFile(url, n, size, Date.parse(r.headers.get("last-modified") ?? "") || 0);
+    }
+    const hit = this.find(this.node.f, n);
+    return hit
+      ? new RemoteFile(this.url + encodeURIComponent(hit[0]), hit[0], hit[1][0], hit[1][1])
       : null;
   }
   async dirs() {
-    return [...(await this.map()).values()].filter((e) => e.dir).map((e) => this.child(e));
+    return Object.entries(this.node.d ?? {}).map(([n, node]) => this.child(n, node));
   }
   async fileNames() {
-    return [...(await this.map()).values()].filter((e) => !e.dir).map((e) => e.name);
+    return Object.keys(this.node.f ?? {});
   }
+
+  /**
+   * Opens a hosted dump from its folder URL (http(s)://…, or ipfs://CID/path through a public
+   * gateway). The folder must hold an etna.json.
+   */
+  static async open(input: string): Promise<RemoteDir> {
+    const url = dumpUrl(input);
+    const u = new URL(url);
+    const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(u.hostname);
+    if (u.protocol === "http:" && !local && globalThis.location?.protocol === "https:")
+      throw new Error(
+        `Browsers block http:// links from an https:// page. Host the dump over HTTPS (or open Etna itself over http://).`,
+      );
+    const r = await remoteFetch(url + MANIFEST_NAME).catch((e: Error) => {
+      throw new Error(
+        `${e.message} Is there an ${MANIFEST_NAME} in that folder? Create one with “make manifest”.`,
+      );
+    });
+    const m = parseManifest(await r.text());
+    const name =
+      decodeURIComponent(new URL(url).pathname.split("/").filter(Boolean).pop() ?? "") ||
+      new URL(url).host;
+    return new RemoteDir(url, name, m.root);
+  }
+}
+
+/** A dump link as a folder URL ending in "/": ipfs://CID/path goes through a public gateway. */
+export function dumpUrl(input: string): string {
+  let u = input.trim();
+  const ipfs = /^(?:ipfs:\/\/|\/ipfs\/)(.+)$/i.exec(u);
+  if (ipfs) u = `https://ipfs.io/ipfs/${ipfs[1]}`;
+  if (!/^https?:\/\//i.test(u))
+    throw new Error("Enter a link starting with https://, http:// or ipfs://.");
+  return u.endsWith("/") ? u : u + "/";
 }
 
 /** Files held in memory, by path ("PQ/Data1/OVERVIEW.BIN"): the built-in demo catalog. */

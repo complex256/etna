@@ -10,7 +10,7 @@ import { Parts, PR, WhereUsed } from "../../src/lib/tables";
 import { plateLabel, plateTitle } from "../../src/lib/text";
 import { plateFits, type VehicleData } from "../../src/lib/vehicleFilter";
 import { decodeVin } from "../../src/lib/vin";
-import { NodeDir } from "./nodeDir";
+import { NodeDir } from "../../scripts/nodeDir";
 
 const root = process.env.DUMP?.replace(/^~(?=$|\/)/, process.env.HOME ?? "~");
 const usable = !!root && fs.existsSync(root);

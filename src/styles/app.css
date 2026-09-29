@@ -2131,3 +2131,18 @@ tfoot td {
   flex-wrap: wrap;
   margin: 0 0 24px;
 }
+.link-open {
+  margin: 0 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.link-row {
+  display: flex;
+  gap: 8px;
+}
+.link-row .filter {
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+}

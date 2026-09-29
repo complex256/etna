@@ -2,7 +2,7 @@
 import { defineStore } from "pinia";
 import { computed, ref, shallowRef } from "vue";
 import { Dump, findBrands, setDump, type Brand } from "../lib/dump";
-import { HandleDir, ListDir, MemoryDir, type Dir } from "../lib/fs";
+import { HandleDir, ListDir, MemoryDir, RemoteDir, type Dir } from "../lib/fs";
 import { clearThumbnails, Illustrations } from "../lib/illustrations";
 import { idb, pref } from "../lib/storage";
 import { appState, go, router } from "../router";
@@ -41,8 +41,9 @@ export const useSession = defineStore("session", () => {
     welcomeError.value = message;
   }
 
-  async function openRoot(root: Dir) {
+  async function openRoot(root: Dir, { remote = false } = {}) {
     welcomeError.value = "";
+    if (!remote) forgetLink();
     if (!loading.value) startLoading("Opening the dump");
     Object.assign(loading.value!, {
       title: "Looking for catalog data",
@@ -147,6 +148,49 @@ export const useSession = defineStore("session", () => {
     await openRoot(root);
   }
 
+  /** The dump link of the page (?dump=…), kept in the address so every page can be shared. */
+  const dumpLink = ref(new URLSearchParams(location.search).get("dump") || "");
+
+  /**
+   * Opens a dump hosted as static files (see lib/manifest.ts). `remember`: put the link in the
+   * address (?dump=) and offer it again on the welcome page.
+   */
+  async function openUrl(link: string, { remember = true } = {}) {
+    welcomeError.value = "";
+    let host = link;
+    try {
+      host = new URL(link.replace(/^ipfs:\/\//i, "https://ipfs.io/ipfs/")).host;
+    } catch {
+      /* shown as typed */
+    }
+    startLoading(
+      `Opening ${host}`,
+      "Reading the dump’s file list, then its vehicle index and texts over the network.",
+    );
+    try {
+      const root = await RemoteDir.open(link);
+      if (remember) {
+        dumpLink.value = link;
+        pref.set("dumpLink", link);
+        const url = new URL(location.href);
+        url.searchParams.set("dump", link);
+        history.replaceState(history.state, "", url);
+      }
+      await openRoot(root, { remote: true });
+    } catch (e) {
+      console.error(e);
+      fail((e as Error).message);
+    }
+  }
+  /** A local folder or the demo is open: the address no longer names a hosted dump. */
+  function forgetLink() {
+    if (!dumpLink.value) return;
+    dumpLink.value = "";
+    const url = new URL(location.href);
+    url.searchParams.delete("dump");
+    history.replaceState(history.state, "", url);
+  }
+
   /** The built-in demo catalog of a toy car (built on demand: the generator loads only now). */
   async function openDemo() {
     welcomeError.value = "";
@@ -187,6 +231,8 @@ export const useSession = defineStore("session", () => {
     reopen,
     openFileList,
     openDemo,
+    openUrl,
+    dumpLink,
     close,
   };
 });

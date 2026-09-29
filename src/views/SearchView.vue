@@ -15,7 +15,7 @@ import { useSession } from "../stores/session";
 const session = useSession();
 const d = session.dump!;
 
-const { data } = useLoad(
+const { data, error } = useLoad(
   () => [appState.value.q, appState.value.market, appState.value.kat],
   async () => {
     const s = appState.value;
@@ -85,7 +85,10 @@ const nothing = (v: NonNullable<typeof data.value>) =>
 </script>
 
 <template>
-  <div v-if="!data || data.q !== (appState.q || '')" class="status">
+  <div v-if="error" class="welcome">
+    <div class="msg">Search failed: {{ error }}</div>
+  </div>
+  <div v-else-if="!data || data.q !== (appState.q || '')" class="status">
     Searching for “{{ appState.q }}”…
   </div>
   <div v-else class="scroll search-pane" style="flex: 1">

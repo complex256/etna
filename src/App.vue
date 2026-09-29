@@ -6,7 +6,7 @@ import ThumbPreview from "./components/ThumbPreview.vue";
 import TopBar from "./components/TopBar.vue";
 import VehicleDataDialog from "./components/VehicleDataDialog.vue";
 import WelcomeScreen from "./components/WelcomeScreen.vue";
-import { EntryDir, HttpDir } from "./lib/fs";
+import { EntryDir } from "./lib/fs";
 import { pref } from "./lib/storage";
 import { appState } from "./router";
 import { useSession } from "./stores/session";
@@ -66,9 +66,15 @@ onMounted(() => {
   document.addEventListener("dragover", onDragOver);
   document.addEventListener("dragleave", onDragLeave);
   document.addEventListener("drop", onDrop);
+  // A shared link opens its dump (?dump=https://…/ or ipfs://…).
+  if (session.dumpLink) session.openUrl(session.dumpLink);
   // Development: open the dump served by `DUMP=… vp dev` (add ?nodump to skip).
-  if (import.meta.env.DEV && __DEV_DUMP__ && !new URLSearchParams(location.search).has("nodump"))
-    session.openRoot(new HttpDir("/__dump/", __DEV_DUMP__));
+  else if (
+    import.meta.env.DEV &&
+    __DEV_DUMP__ &&
+    !new URLSearchParams(location.search).has("nodump")
+  )
+    session.openUrl(new URL("/__dump/", location.href).href, { remember: false });
 });
 onBeforeUnmount(() => {
   document.removeEventListener("dragover", onDragOver);

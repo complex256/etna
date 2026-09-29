@@ -9,6 +9,7 @@
 #   make test       checks + unit tests (the dump tests use $(DUMP))
 #   make e2e        browser tests (the demo catalog, plus $(DUMP) when set)
 #   make screenshots  README screenshots of the demo catalog, light and dark
+#   make manifest   write etna.json into $(DUMP), for hosting it as static files
 #
 # DUMP is the brand folder of a dump (the one containing Data1/Data2, Bilder, ...).
 
@@ -20,7 +21,7 @@ PORT ?= 8765
 export PATH := $(HOME)/.local/share/vite-plus/bin:$(HOME)/.local/share/vite-plus/fallback-bin:$(PATH)
 VP := $(shell PATH="$(PATH)" command -v vp)
 
-.PHONY: all install dev build open serve check test unit e2e screenshots clean help
+.PHONY: all install dev build open serve check test unit e2e screenshots manifest clean help
 
 all: build
 
@@ -58,8 +59,12 @@ e2e: node_modules
 screenshots: node_modules
 	$(VP) node scripts/screenshots.ts
 
+manifest: node_modules
+	@test -d "$(DUMP)" || { echo "Set DUMP to the dump's brand folder"; exit 1; }
+	$(VP) node scripts/manifest.ts "$(DUMP)"
+
 clean:
 	rm -rf dist test-results playwright-report node_modules/.tmp
 
 help:
-	@sed -n '1,13p' Makefile | sed 's/^# \{0,1\}//'
+	@sed -n '1,14p' Makefile | sed 's/^# \{0,1\}//'

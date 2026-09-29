@@ -23,6 +23,8 @@ press **Try the demo** to explore the built-in catalog of a ride-on toy car.
   illustrations that do not fit your vehicle are dimmed or hidden. Decode a VIN to its catalog.
 - **Retrofit planner.** For any option, see the parts you would need, the parts it replaces, and
   what else it depends on.
+- **Shareable links.** Point Etna at a dump hosted anywhere (IPFS, object storage, your NAS) and
+  send a link that opens it, on the exact page you are looking at.
 - **Garage.** Save vehicles once and reopen them with their catalog and codes; export a backup.
 - **Part details.** Price, supersessions, where else a part is used, service notes and pictures.
 - **Search.** Part numbers, descriptions across all catalogs, engine and gearbox codes, VINs.
@@ -54,6 +56,57 @@ press **Try the demo** to explore the built-in catalog of a ride-on toy car.
 The screenshots show the built-in demo and follow your GitHub light or dark theme. Regenerate them
 with `make screenshots`.
 
+## Sharing a hosted dump
+
+Etna can open a dump that lives on any static file host, so you can send someone a link instead of
+a copy of the dump. Etna reads only the files a page needs, straight from that host.
+
+1. **Add a file list.** Static hosts cannot list folders, so the dump needs an `etna.json`:
+
+   ```sh
+   make manifest DUMP=/path/to/dump/<brand>   # writes <brand>/etna.json (about 300 KB)
+   ```
+
+2. **Upload the brand folder** to a host that serves it over **HTTPS** with **CORS** allowed for
+   Etna's page and **Range** requests (most do). For example:
+
+   - **IPFS:** `ipfs add -r --cid-version 1 <brand>` and use `ipfs://<CID>` as the link (served
+     through the `ipfs.io` gateway while your node, or a pinning service, keeps it available).
+   - **Cloudflare R2, S3 or other object storage**, with a CORS rule like:
+
+     ```json
+     [
+       {
+         "AllowedOrigins": ["https://complex256.github.io"],
+         "AllowedMethods": ["GET", "HEAD"],
+         "AllowedHeaders": ["Range"],
+         "MaxAgeSeconds": 86400
+       }
+     ]
+     ```
+
+   - **nginx** (for example on a NAS behind HTTPS):
+
+     ```nginx
+     location /dump/ {
+       add_header Access-Control-Allow-Origin "https://complex256.github.io" always;
+       add_header Access-Control-Allow-Headers "Range" always;
+       if ($request_method = OPTIONS) { return 204; }
+     }
+     ```
+
+3. **Share the link.** Paste the folder's URL into **Open link** on Etna's welcome page, or build the
+   link yourself:
+
+   ```text
+   https://complex256.github.io/etna/?dump=https://files.example.com/dump/<brand>/
+   ```
+
+   Once it is open, **Copy link** in the top bar copies a link to the page you are on, dump included.
+
+Etna never uploads or copies the dump; whoever hosts it decides who can reach it. A host with access
+control (a private bucket, a NAS on a private network) keeps it to the people you choose.
+
 ## Hosting
 
 Published to **https://complex256.github.io/etna/** from `main` by `.github/workflows/pages.yml`,
@@ -79,6 +132,7 @@ make install
 | `make test`        | Format, lint and type checks, then unit tests (the dump tests use `DUMP`)    |
 | `make e2e`         | Browser tests (Playwright): the demo catalog, plus `DUMP` when set           |
 | `make screenshots` | Retake the README screenshots from the demo, light and dark                  |
+| `make manifest`    | Write `etna.json` into `DUMP`, for hosting it as static files                |
 
 `DUMP` is a brand folder, the one containing `Data1`/`Data2`, `Bilder` and `minis`:
 `make dev DUMP=/path/to/dump/<brand>` (or export `DUMP` once in your shell).

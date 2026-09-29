@@ -149,3 +149,24 @@ test("garage saves a vehicle and restores its data", async ({ page }) => {
   await page.reload();
   await expect(page.getByRole("button", { name: "Garage (1)" })).toBeVisible();
 });
+
+test("a shared link opens a hosted dump on the linked page", async ({ page, baseURL }) => {
+  // The dev server serves DUMP at /__dump/ like a static host (etna.json + Range requests).
+  const link = new URL("/__dump/", baseURL).href;
+  await page.goto(`/?dump=${encodeURIComponent(link)}#/USA/catalog/849/plate/85771?year=2018`);
+  await expect(page.locator(".plate-head .t b")).toHaveText("857-71");
+  await expect(page.locator(".sheet canvas")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+  // Navigating keeps the link in the address, so any page can be shared.
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator(".plate-head .t b")).toHaveText("857-72");
+  expect(new URL(page.url()).searchParams.get("dump")).toBe(link);
+});
+
+test("the welcome page opens a pasted link", async ({ page, baseURL }) => {
+  await page.goto("/?nodump#/");
+  await page.getByLabel("Link to a hosted dump").fill(new URL("/__dump/", baseURL).href);
+  await page.getByRole("button", { name: "Open link" }).click();
+  await expect(page.locator(".bar .brand small")).not.toBeEmpty();
+  await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+});

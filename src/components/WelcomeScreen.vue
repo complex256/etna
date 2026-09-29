@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, shallowRef } from "vue";
-import { idb } from "../lib/storage";
+import { idb, pref } from "../lib/storage";
 import { useSession } from "../stores/session";
 
 const session = useSession();
@@ -8,6 +8,9 @@ const canPick = "showDirectoryPicker" in window;
 const saved = shallowRef<FileSystemDirectoryHandle | null>(null);
 const fileInput = ref<HTMLInputElement>();
 let filesLoading = false;
+const link = ref("");
+const lastLink = pref.get("dumpLink");
+const openLink = () => link.value.trim() && session.openUrl(link.value.trim());
 const layout =
   "dump/\n└─ <brand>/       brand folder\n   ├─ Data2/      OVERVIEW.BIN, 06_EN.BIN, R/, U/ …\n   ├─ Bilder/     illustrations (.tif)\n   └─ minis/      thumbnails (.png)";
 
@@ -110,6 +113,28 @@ function onCancel() {
           a full dump opens right away.</span
         >
       </div>
+      <form class="link-open" @submit.prevent="openLink">
+        <label class="field">
+          <span>Or open a dump hosted somewhere else</span>
+          <span class="link-row">
+            <input
+              v-model="link"
+              class="filter"
+              type="url"
+              inputmode="url"
+              placeholder="https://… or ipfs://… (the folder with etna.json)"
+              aria-label="Link to a hosted dump"
+            />
+            <button class="btn" type="submit" :disabled="!link.trim()">Open link</button>
+          </span>
+        </label>
+        <div v-if="lastLink" class="dim">
+          Last used:
+          <button type="button" class="linkish" @click="session.openUrl(lastLink)">
+            {{ lastLink }}
+          </button>
+        </div>
+      </form>
       <div class="demo-offer">
         <button class="btn" @click="session.openDemo()">Try the demo</button>
         <span class="dim">No dump at hand? Explore a built-in catalog of a ride-on toy car.</span>

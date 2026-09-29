@@ -1,7 +1,7 @@
 // The viewer's folder interface over Node's file system, for tests against a real dump.
 import fs from "node:fs";
 import path from "node:path";
-import type { Dir, FileLike } from "../../src/lib/fs";
+import type { Dir, FileLike } from "../src/lib/fs";
 
 class NodeFile implements FileLike {
   readonly name: string;

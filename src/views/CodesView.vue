@@ -14,7 +14,7 @@ watch(
   () => (filter.value = appState.value.code || ""),
 );
 const kind = computed(() => (appState.value.codes === "gearbox" ? "gearbox" : "engine"));
-const { data } = useLoad(
+const { data, error } = useLoad(
   () => appState.value.market,
   () => Codes.load(appState.value.market!),
 );
@@ -41,7 +41,7 @@ onMounted(() => filterEl.value?.focus());
     <div class="pane-head split">
       <div>
         <h1>{{ kind === "engine" ? "Engine codes" : "Gearbox codes" }}</h1>
-        <div class="meta">{{ result?.count ?? "Loading code register…" }}</div>
+        <div class="meta">{{ error || result?.count || "Loading code register…" }}</div>
       </div>
       <div class="view-tabs">
         <button

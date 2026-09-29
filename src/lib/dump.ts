@@ -405,12 +405,19 @@ export function setDump(d: Dump | null) {
   current = d;
 }
 
-/** Memoizes a value per open dump (caches are dropped when another dump is opened). */
+/**
+ * Memoizes a value per open dump (caches are dropped when another dump is opened). A promise that
+ * fails is forgotten, so a later call retries (a network hiccup must not stick for the session).
+ */
 export function perDump<T>(init: (d: Dump) => T): () => T {
   const m = new WeakMap<Dump, T>();
   return () => {
     const d = dump();
-    if (!m.has(d)) m.set(d, init(d));
+    if (!m.has(d)) {
+      const v = init(d);
+      m.set(d, v);
+      if (v instanceof Promise) v.catch(() => m.get(d) === v && m.delete(d));
+    }
     return m.get(d)!;
   };
 }

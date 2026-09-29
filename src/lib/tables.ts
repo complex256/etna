@@ -67,13 +67,31 @@ export class KeyedTable {
     return this.ready;
   }
 
+  // The index is read in 64 KB pages: nearby probes of a binary search share a request, which
+  // matters when the dump is read over the network.
+  private pages = new Map<number, Promise<Uint8Array>>();
+  private page(p: number) {
+    let pg = this.pages.get(p);
+    if (!pg) {
+      const per = Math.max(1, Math.floor(65536 / this.w));
+      pg = this.pnt
+        .slice(p * per * this.w, Math.min(this.n, (p + 1) * per) * this.w)
+        .arrayBuffer()
+        .then((b) => new Uint8Array(b));
+      if (this.pages.size > 64) this.pages.delete(this.pages.keys().next().value!);
+      this.pages.set(p, pg);
+    }
+    return pg;
+  }
   private async entry(i: number) {
     let e = this.cache.get(i);
     if (!e) {
-      const b = new Uint8Array(await this.pnt.slice(i * this.w, (i + 1) * this.w).arrayBuffer());
+      const per = Math.max(1, Math.floor(65536 / this.w));
+      const b = await this.page(Math.floor(i / per));
+      const at = (i % per) * this.w;
       let k = "";
-      for (let j = 0; j < this.keyLen; j++) k += String.fromCharCode(b[j]);
-      e = { k, off: u32(b, this.keyLen) };
+      for (let j = 0; j < this.keyLen; j++) k += String.fromCharCode(b[at + j]);
+      e = { k, off: u32(b, at + this.keyLen) };
       if (this.cache.size > 4096) this.cache.clear();
       this.cache.set(i, e);
     }
@@ -162,8 +180,11 @@ function perDumpKeyed<T>(load: (d: Dump, key: string) => Promise<T>) {
     const c = caches();
     let v = c.get(key);
     if (!v) {
-      v = load(dump(), key);
-      c.set(key, v);
+      const p = load(dump(), key);
+      c.set(key, p);
+      // Forget failures so a later call retries.
+      p.catch(() => c.get(key) === p && c.delete(key));
+      v = p;
     }
     return v;
   };

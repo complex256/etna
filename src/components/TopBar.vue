@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { copyText, useFlash } from "../composables/useFlash";
 import { pref } from "../lib/storage";
 import { appState, go } from "../router";
 import { useGarage } from "../stores/garage";
@@ -11,6 +12,10 @@ import SearchBox from "./SearchBox.vue";
 const session = useSession();
 const partsList = usePartsList();
 const garage = useGarage();
+// A hosted dump: the address opens this page on this dump, so it can be shared as is.
+const { label: shareLabel, flash: flashShare } = useFlash("Copy link");
+const copyLink = () =>
+  copyText(location.href, (m) => flashShare(m === "Copied" ? "Link copied" : m));
 
 function toggleTheme() {
   const root = document.documentElement;
@@ -32,6 +37,15 @@ function toggleTheme() {
     <span v-else class="crumbs" />
     <SearchBox v-if="session.dump" />
     <MarketPicker v-if="session.dump && appState.market" />
+    <button
+      v-if="session.dump && session.dumpLink"
+      class="icon-btn"
+      type="button"
+      title="Copy a link to this page on this dump"
+      @click="copyLink"
+    >
+      {{ shareLabel }}
+    </button>
     <button
       v-if="session.dump"
       class="icon-btn"
